@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>VAT & Tax Pro | Popup Calculator</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%232c7da0'/%3E%3Ctext x='50' y='68' font-size='52' text-anchor='middle' fill='white' font-weight='bold'%3E🧮%3C/text%3E%3C/svg%3E">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #e9eef3 0%, #dce3ec 100%);
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+        }
+
+        html {
+            overflow: hidden;
+        }
+
+        .app-wrapper {
+            max-width: 1400px;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            overflow: hidden;
+        }
+
+        /* main VAT panel */
+        .vat-panel {
+            flex: 1;
+            background: #ffffff;
+            border-radius: 28px;
+            box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.15);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* header with calculator icon */
+        .vat-header {
+            padding: 1rem 1.5rem;
+            background: #f9fbfd;
+            border-bottom: 1px solid #e9edf2;
+            flex-shrink: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .title-section h2 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #1a4d6b;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .formula-badge {
+            font-size: 0.65rem;
+            background: #e2f0f7;
+            padding: 4px 12px;
+            border-radius: 40px;
+            color: #1f6e8c;
+            font-family: monospace;
+        }
+
+        .calc-icon-btn {
+            background: #2c7da0;
+            border: none;
+            width: 44px;
+            height: 44px;
+            border-radius: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .calc-icon-btn:hover {
+            background: #1f5e7a;
+            transform: scale(1.03);
+        }
+
+        .calc-icon-btn span {
+            font-size: 1.5rem;
+        }
+
+        .info-text {
+            font-size: 0.7rem;
+            color: #5b7a9a;
+            margin-top: 4px;
+        }
+
+        /* table container - no visible scrollbars */
+        .table-container {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: auto;
+            padding: 0 1.2rem 0.5rem 1.2rem;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        .table-container::-webkit-scrollbar {
+            display: none;
+        }
+
+        .v-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+            min-width: 800px;
+        }
+
+        .v-table th {
+            text-align: left;
+            padding: 12px 8px 10px 8px;
+            color: #2c5f8a;
+            font-weight: 700;
+            font-size: 0.73rem;
+            border-bottom: 1.5px solid #e2e8f0;
+        }
+
+        .v-table td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #edf2f7;
+            vertical-align: middle;
+        }
+
+        .num-input {
+            width: 110px;
+            padding: 8px 10px;
+            border: 1.5px solid #dce3ec;
+            border-radius: 12px;
+            font-weight: 500;
+            font-size: 0.85rem;
+            background: #ffffff;
+            transition: 0.15s;
+        }
+
+        .num-input:focus {
+            outline: none;
+            border-color: #2c7da0;
+            box-shadow: 0 0 0 3px rgba(44,125,160,0.1);
+        }
+
+        .small-input {
+            width: 75px;
+            text-align: center;
+        }
+
+        /* mode icons */
+        .mode-icons {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .mode-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 40px;
+            border: 2px solid #e2e8f0;
+            background: white;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.1s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .mode-btn.active-add {
+            background: #22c55e;
+            border-color: #16a34a;
+            color: white;
+        }
+        .mode-btn.active-sub {
+            background: #ef4444;
+            border-color: #dc2626;
+            color: white;
+        }
+        .mode-btn:not(.active-add):not(.active-sub) {
+            background: #f1f5f9;
+            color: #64748b;
+        }
+        .mode-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .result-cell {
+            background: #fef7e0;
+            font-weight: 700;
+            font-family: monospace;
+            font-size: 0.9rem;
+            color: #a16207;
+            text-align: right;
+            padding-right: 12px;
+            border-radius: 10px;
+        }
+
+        .final-cell {
+            background: #dcfce7;
+            font-weight: 800;
+            color: #166534;
+            text-align: right;
+            padding-right: 12px;
+            border-radius: 10px;
+        }
+
+        .copy-btn-sm {
+            background: #eff6ff;
+            border: none;
+            padding: 5px 12px;
+            border-radius: 30px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            cursor: pointer;
+            color: #1e4a76;
+            transition: 0.1s;
+        }
+
+        .copy-btn-sm:hover {
+            background: #e0edfe;
+            transform: scale(0.96);
+        }
+
+        .icon-btn {
+            border: none;
+            width: 38px;
+            height: 38px;
+            border-radius: 40px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.1s;
+        }
+
+        .icon-green {
+            background: #22c55e;
+            color: white;
+            font-size: 1.3rem;
+        }
+
+        .icon-green:hover {
+            background: #16a34a;
+            transform: scale(1.02);
+        }
+
+        .icon-red {
+            background: #fee2e2;
+            color: #dc2626;
+            font-size: 1rem;
+        }
+
+        .icon-red:hover {
+            background: #fecaca;
+            transform: scale(0.96);
+        }
+
+        .footer-bar {
+            padding: 1rem 1.5rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid #ecf3f9;
+            flex-shrink: 0;
+        }
+
+        .copy-all {
+            background: #334155;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+
+        /* ========== MODAL POPUP CALCULATOR ========== */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            visibility: hidden;
+            opacity: 0;
+            transition: visibility 0.2s, opacity 0.2s;
+        }
+
+        .modal-overlay.active {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .calculator-modal {
+            background: #1e293b;
+            border-radius: 32px;
+            width: 400px;
+            max-width: 90vw;
+            box-shadow: 0 30px 50px rgba(0, 0, 0, 0.4);
+            overflow: hidden;
+            transform: scale(0.95);
+            transition: transform 0.2s;
+        }
+
+        .modal-overlay.active .calculator-modal {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            background: #0f172a;
+            border-bottom: 1px solid #334155;
+        }
+
+        .modal-header h3 {
+            color: #facc15;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #94a3b8;
+            transition: 0.1s;
+        }
+
+        .close-modal:hover {
+            color: #ef4444;
+        }
+
+        .calc-display {
+            background: #0f172a;
+            padding: 20px;
+            text-align: right;
+        }
+
+        .calc-expression {
+            background: #0f172a;
+            border: none;
+            width: 100%;
+            font-size: 1.3rem;
+            font-family: 'Courier New', monospace;
+            color: #94a3b8;
+            text-align: right;
+            outline: none;
+            padding: 6px 0;
+        }
+
+        .calc-result {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #facc15;
+            font-family: monospace;
+            word-break: break-all;
+        }
+
+        .calc-buttons {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            padding: 20px;
+            background: #1e293b;
+        }
+
+        .calc-btn {
+            background: #334155;
+            border: none;
+            padding: 14px 0;
+            border-radius: 16px;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #f1f5f9;
+            cursor: pointer;
+            transition: 0.06s linear;
+            font-family: monospace;
+        }
+
+        .calc-btn:active {
+            transform: scale(0.96);
+            background: #475569;
+        }
+
+        .calc-btn.accent {
+            background: #2c7da0;
+            color: white;
+        }
+
+        .calc-btn.wide {
+            background: #f59e0b;
+            color: #1e293b;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1f2f3e;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 60px;
+            font-size: 0.8rem;
+            opacity: 0;
+            transition: opacity 0.2s;
+            pointer-events: none;
+            z-index: 4000;
+        }
+
+        @media (max-width: 950px) {
+            body {
+                position: relative;
+                overflow-y: auto;
+            }
+            html {
+                overflow-y: auto;
+            }
+            .table-container {
+                overflow-y: visible;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="app-wrapper">
+    <div class="vat-panel">
+        <div class="vat-header">
+            <div class="title-section">
+                <h2>
+                    🧾 VAT & TAX Calculator
+                    <span class="formula-badge">Excel: VAT inclusive → TAX on net</span>
+                </h2>
+                <div class="info-text">⚡ Click any input → auto-select | 🟢 Add / 🔴 Subtract</div>
+            </div>
+            <button class="calc-icon-btn" id="openCalculatorBtn" title="Open Calculator (Keyboard supported)">
+                <span>🧮</span>
+            </button>
+        </div>
+        <div class="table-container">
+            <table class="v-table" id="mainTable">
+                <thead>
+                    <tr><th>Allocated (Tk)</th><th>VAT %</th><th>TAX %</th><th>Mode</th><th>VAT (Tk)</th><th>TAX (Tk)</th><th>VAT+TAX</th><th>Final Amt</th><th>Copy</th><th></th></tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+        <div class="footer-bar">
+            <button class="icon-btn icon-green" id="addRowBtn" title="Add new row">+</button>
+            <button class="copy-all" id="copyAllBtn">📋 Copy All Rows</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Popup Calculator -->
+<div id="calculatorModal" class="modal-overlay">
+    <div class="calculator-modal">
+        <div class="modal-header">
+            <h3>🧮 Smart Calculator <span style="font-size:0.7rem;">(brackets & keyboard)</span></h3>
+            <button class="close-modal" id="closeModalBtn">✖</button>
+        </div>
+        <div class="calc-display">
+            <div id="calcExpression" class="calc-expression">0</div>
+            <div id="calcResult" class="calc-result">0</div>
+        </div>
+        <div class="calc-buttons">
+            <button class="calc-btn" data-value="7">7</button>
+            <button class="calc-btn" data-value="8">8</button>
+            <button class="calc-btn" data-value="9">9</button>
+            <button class="calc-btn accent" data-value="/">÷</button>
+            <button class="calc-btn accent" data-value="C">C</button>
+            
+            <button class="calc-btn" data-value="4">4</button>
+            <button class="calc-btn" data-value="5">5</button>
+            <button class="calc-btn" data-value="6">6</button>
+            <button class="calc-btn accent" data-value="*">×</button>
+            <button class="calc-btn accent" data-value="(">(</button>
+            
+            <button class="calc-btn" data-value="1">1</button>
+            <button class="calc-btn" data-value="2">2</button>
+            <button class="calc-btn" data-value="3">3</button>
+            <button class="calc-btn accent" data-value="-">-</button>
+            <button class="calc-btn accent" data-value=")">)</button>
+            
+            <button class="calc-btn" data-value="0">0</button>
+            <button class="calc-btn" data-value="00">00</button>
+            <button class="calc-btn" data-value=".">.</button>
+            <button class="calc-btn accent" data-value="+">+</button>
+            <button class="calc-btn wide" data-value="=">=</button>
+            <button class="calc-btn" data-value="←">⌫</button>
+        </div>
+    </div>
+</div>
+
+<div id="toastMsg" class="toast">✔ Copied</div>
+
+<script>
+    // ---------- UTILITIES ----------
+    function showToast(msg, isError = false) {
+        const toast = document.getElementById('toastMsg');
+        toast.textContent = msg || (isError ? 'Error' : 'Copied!');
+        toast.style.opacity = '1';
+        setTimeout(() => toast.style.opacity = '0', 1500);
+    }
+
+    // ---------- VAT/TAX CORE ----------
+    function calculateRow(rowElement) {
+        const allocatedInp = rowElement.querySelector('.allocated-val');
+        const vatInp = rowElement.querySelector('.vat-perc');
+        const taxInp = rowElement.querySelector('.tax-perc');
+        
+        let allocated = parseFloat(allocatedInp.value);
+        if (isNaN(allocated)) allocated = 0;
+        let vatPerc = parseFloat(vatInp.value);
+        if (isNaN(vatPerc)) vatPerc = 0;
+        let taxPerc = parseFloat(taxInp.value);
+        if (isNaN(taxPerc)) taxPerc = 0;
+        
+        const addBtn = rowElement.querySelector('.mode-add-btn');
+        const isAdd = addBtn?.classList.contains('active-add') ?? true;
+        
+        let vatAmount = 0;
+        if (vatPerc > 0 && allocated > 0) {
+            vatAmount = Math.round((vatPerc / (100 + vatPerc)) * allocated);
+        }
+        let taxAmount = 0;
+        const baseForTax = allocated - vatAmount;
+        if (taxPerc > 0 && baseForTax > 0) {
+            taxAmount = Math.round((taxPerc / 100) * baseForTax);
+        }
+        const totalVatTax = vatAmount + taxAmount;
+        let finalAmount = isAdd ? allocated + totalVatTax : allocated - totalVatTax;
+        finalAmount = Math.round(finalAmount);
+        
+        rowElement.querySelector('.vat-result').textContent = vatAmount;
+        rowElement.querySelector('.tax-result').textContent = taxAmount;
+        rowElement.querySelector('.sum-result').textContent = totalVatTax;
+        rowElement.querySelector('.final-result').textContent = finalAmount;
+    }
+    
+    function attachAutoSelect(inputEl) {
+        if (!inputEl) return;
+        const handler = (e) => { inputEl.select(); };
+        inputEl.addEventListener('click', handler);
+        inputEl.addEventListener('focus', handler);
+    }
+    
+    async function copySingleRow(row) {
+        const alloc = row.querySelector('.allocated-val').value || "0";
+        const vatP = row.querySelector('.vat-perc').value || "0";
+        const taxP = row.querySelector('.tax-perc').value || "0";
+        const isAdd = row.querySelector('.mode-add-btn')?.classList.contains('active-add');
+        const mode = isAdd ? "Add (VAT+TAX)" : "Subtract (VAT+TAX)";
+        const vatAmt = row.querySelector('.vat-result').textContent;
+        const taxAmt = row.querySelector('.tax-result').textContent;
+        const sumAmt = row.querySelector('.sum-result').textContent;
+        const finalAmt = row.querySelector('.final-result').textContent;
+        const text = `📌 Allocated: ${alloc} Tk\n🔹 VAT ${vatP}% = ${vatAmt} Tk\n🔹 TAX ${taxP}% = ${taxAmt} Tk\n📊 VAT+TAX = ${sumAmt} Tk\n⚙️ ${mode}\n💰 Final = ${finalAmt} Tk`;
+        try {
+            await navigator.clipboard.writeText(text);
+            showToast(`✔ Row copied (${finalAmt} Tk)`);
+        } catch(e) { showToast('❌ Copy failed', true); }
+    }
+    
+    async function copyAllRows() {
+        const rows = document.querySelectorAll('#tableBody .data-row');
+        if (!rows.length) { showToast('No rows', false); return; }
+        let report = "📋 VAT & TAX REPORT (Excel style)\n═══════════════════════════════════\n";
+        let idx = 1;
+        for (let row of rows) {
+            const alloc = row.querySelector('.allocated-val').value || "0";
+            const vatP = row.querySelector('.vat-perc').value || "0";
+            const taxP = row.querySelector('.tax-perc').value || "0";
+            const isAdd = row.querySelector('.mode-add-btn')?.classList.contains('active-add');
+            const mode = isAdd ? "Add" : "Subtract";
+            const vatAmt = row.querySelector('.vat-result').textContent;
+            const taxAmt = row.querySelector('.tax-result').textContent;
+            const sumAmt = row.querySelector('.sum-result').textContent;
+            const finalAmt = row.querySelector('.final-result').textContent;
+            report += `\n▪ Row ${idx}: ${alloc} Tk | VAT ${vatP}%→${vatAmt} | TAX ${taxP}%→${taxAmt}\n   Σ=${sumAmt} | ${mode} mode | Final=${finalAmt} Tk\n`;
+            idx++;
+        }
+        report += "═══════════════════════════════════";
+        try {
+            await navigator.clipboard.writeText(report);
+            showToast(`📑 Copied ${rows.length} row(s)`);
+        } catch(e) { showToast('Error', true); }
+    }
+    
+    function setRowMode(row, mode) {
+        const addBtn = row.querySelector('.mode-add-btn');
+        const subBtn = row.querySelector('.mode-sub-btn');
+        if (mode === 'add') {
+            addBtn.classList.add('active-add');
+            subBtn.classList.remove('active-sub');
+            addBtn.style.background = '#22c55e';
+            addBtn.style.borderColor = '#16a34a';
+            subBtn.style.background = '#f1f5f9';
+            subBtn.style.borderColor = '#e2e8f0';
+            subBtn.style.color = '#64748b';
+            addBtn.style.color = 'white';
+        } else {
+            subBtn.classList.add('active-sub');
+            addBtn.classList.remove('active-add');
+            subBtn.style.background = '#ef4444';
+            subBtn.style.borderColor = '#dc2626';
+            subBtn.style.color = 'white';
+            addBtn.style.background = '#f1f5f9';
+            addBtn.style.borderColor = '#e2e8f0';
+            addBtn.style.color = '#64748b';
+        }
+        calculateRow(row);
+    }
+    
+    function bindRowEvents(row) {
+        const inputs = row.querySelectorAll('.allocated-val, .vat-perc, .tax-perc');
+        const recalc = () => calculateRow(row);
+        inputs.forEach(inp => {
+            inp.removeEventListener('input', recalc);
+            inp.addEventListener('input', recalc);
+            attachAutoSelect(inp);
+        });
+        
+        const addModeBtn = row.querySelector('.mode-add-btn');
+        const subModeBtn = row.querySelector('.mode-sub-btn');
+        if (addModeBtn) addModeBtn.onclick = (e) => { e.preventDefault(); setRowMode(row, 'add'); };
+        if (subModeBtn) subModeBtn.onclick = (e) => { e.preventDefault(); setRowMode(row, 'subtract'); };
+        
+        const copyBtn = row.querySelector('.copy-row-btn');
+        if (copyBtn) copyBtn.onclick = () => copySingleRow(row);
+        
+        const removeBtn = row.querySelector('.remove-row-btn');
+        if (removeBtn) {
+            removeBtn.onclick = () => {
+                const allRows = document.querySelectorAll('#tableBody .data-row');
+                if (allRows.length === 1) { showToast('❗ Cannot delete the last row', false); return; }
+                row.remove();
+                showToast('Row removed');
+            };
+        }
+        recalc();
+    }
+    
+    let rowCounter = 0;
+    function createEmptyRow() {
+        const rid = rowCounter++;
+        const tr = document.createElement('tr');
+        tr.className = 'data-row';
+        tr.innerHTML = `
+            <td><input type="number" step="any" class="num-input allocated-val" placeholder="0" value=""></td>
+            <td><input type="number" step="any" class="num-input small-input vat-perc" placeholder="%" value=""></td>
+            <td><input type="number" step="any" class="num-input small-input tax-perc" placeholder="%" value=""></td>
+            <td>
+                <div class="mode-icons">
+                    <button type="button" class="mode-btn mode-add-btn" title="Add VAT+TAX">➕</button>
+                    <button type="button" class="mode-btn mode-sub-btn" title="Subtract VAT+TAX">➖</button>
+                </div>
+            </td>
+            <td class="result-cell vat-result" style="text-align:right;">0</td>
+            <td class="result-cell tax-result" style="text-align:right;">0</td>
+            <td class="result-cell sum-result" style="text-align:right;">0</td>
+            <td class="final-cell final-result" style="text-align:right;">0</td>
+            <td><button class="copy-btn-sm copy-row-btn">📋 Copy</button></td>
+            <td><button class="icon-btn icon-red remove-row-btn" title="Remove row">✖</button></td>
+        `;
+        const addBtn = tr.querySelector('.mode-add-btn');
+        const subBtn = tr.querySelector('.mode-sub-btn');
+        addBtn.style.background = '#22c55e';
+        addBtn.style.borderColor = '#16a34a';
+        addBtn.style.color = 'white';
+        subBtn.style.background = '#f1f5f9';
+        subBtn.style.borderColor = '#e2e8f0';
+        subBtn.style.color = '#64748b';
+        addBtn.classList.add('active-add');
+        return tr;
+    }
+    
+    function initTable() {
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+        rowCounter = 0;
+        const firstRow = createEmptyRow();
+        tbody.appendChild(firstRow);
+        bindRowEvents(firstRow);
+        const allocInput = firstRow.querySelector('.allocated-val');
+        if (allocInput) allocInput.value = '';
+        const vatInput = firstRow.querySelector('.vat-perc');
+        if (vatInput) vatInput.value = '';
+        const taxInput = firstRow.querySelector('.tax-perc');
+        if (taxInput) taxInput.value = '';
+        calculateRow(firstRow);
+    }
+    
+    function addNewRow() {
+        const tbody = document.getElementById('tableBody');
+        const newRow = createEmptyRow();
+        tbody.appendChild(newRow);
+        bindRowEvents(newRow);
+        const firstInput = newRow.querySelector('.allocated-val');
+        if (firstInput) { firstInput.focus(); firstInput.select(); }
+        showToast('➕ New row added');
+        newRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+    
+    // ---------- POPUP CALCULATOR (isolated, no conflict) ----------
+    const modal = document.getElementById('calculatorModal');
+    const openBtn = document.getElementById('openCalculatorBtn');
+    const closeBtn = document.getElementById('closeModalBtn');
+    const exprDisplay = document.getElementById('calcExpression');
+    const resultDisplay = document.getElementById('calcResult');
+    let currentExpression = '';
+    
+    function updateCalcDisplay() {
+        exprDisplay.innerText = currentExpression || '0';
+        if (!currentExpression.trim()) {
+            resultDisplay.innerText = '0';
+            return;
+        }
+        try {
+            let expr = currentExpression.replace(/×/g, '*').replace(/÷/g, '/');
+            const result = Function('"use strict";return (' + expr + ')')();
+            if (isNaN(result) || !isFinite(result)) throw new Error();
+            const formatted = Number.isInteger(result) ? result : parseFloat(result.toFixed(8));
+            resultDisplay.innerText = formatted;
+        } catch (e) {
+            resultDisplay.innerText = 'Error';
+        }
+    }
+    
+    function handleCalcInput(value) {
+        if (value === 'C') {
+            currentExpression = '';
+            updateCalcDisplay();
+        } else if (value === '←' || value === 'Backspace') {
+            currentExpression = currentExpression.slice(0, -1);
+            updateCalcDisplay();
+        } else if (value === '=' || value === 'Enter') {
+            try {
+                let expr = currentExpression.replace(/×/g, '*').replace(/÷/g, '/');
+                const result = Function('"use strict";return (' + expr + ')')();
+                if (isNaN(result) || !isFinite(result)) throw new Error();
+                const finalRes = Number.isInteger(result) ? result : parseFloat(result.toFixed(8));
+                currentExpression = finalRes.toString();
+                updateCalcDisplay();
+            } catch (e) {
+                resultDisplay.innerText = 'Error';
+                setTimeout(() => { if(currentExpression) updateCalcDisplay(); }, 800);
+            }
+        } else {
+            currentExpression += value;
+            updateCalcDisplay();
+        }
+    }
+    
+    function openModal() {
+        modal.classList.add('active');
+        // focus on modal to capture keyboard
+        modal.focus();
+        // Prevent body scroll
+        document.body.style.overflow = 'hidden';
+    }
+    
+    function closeModal() {
+        modal.classList.remove('active');
+        document.body.style.overflow = '';
+        // restore body overflow
+        if (window.innerWidth <= 950) {
+            document.body.style.overflow = 'auto';
+        } else {
+            document.body.style.overflow = 'hidden';
+        }
+    }
+    
+    function initCalculator() {
+        const btns = document.querySelectorAll('.calc-btn');
+        btns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const val = btn.getAttribute('data-value');
+                if (val) handleCalcInput(val);
+            });
+        });
+        
+        // Keyboard support only when modal is open
+        window.addEventListener('keydown', (e) => {
+            if (!modal.classList.contains('active')) return;
+            const key = e.key;
+            const validKeys = /^[0-9+\-*/().]$/;
+            if (validKeys.test(key)) {
+                e.preventDefault();
+                handleCalcInput(key);
+            } else if (key === 'Enter') {
+                e.preventDefault();
+                handleCalcInput('=');
+            } else if (key === 'Backspace') {
+                e.preventDefault();
+                handleCalcInput('←');
+            } else if (key === 'Escape') {
+                e.preventDefault();
+                closeModal();
+            }
+        });
+        
+        openBtn.addEventListener('click', openModal);
+        closeBtn.addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+        
+        currentExpression = '';
+        updateCalcDisplay();
+    }
+    
+    // ---------- INIT ----------
+    document.addEventListener('DOMContentLoaded', () => {
+        initTable();
+        initCalculator();
+        document.getElementById('addRowBtn').addEventListener('click', addNewRow);
+        document.getElementById('copyAllBtn').addEventListener('click', copyAllRows);
+        
+        document.documentElement.style.overflow = 'hidden';
+        document.body.style.overflow = 'hidden';
+        
+        const checkOverflow = () => {
+            if (window.innerWidth <= 950) {
+                document.documentElement.style.overflow = 'auto';
+                document.body.style.overflow = 'auto';
+            } else {
+                document.documentElement.style.overflow = 'hidden';
+                document.body.style.overflow = 'hidden';
+            }
+        };
+        checkOverflow();
+        window.addEventListener('resize', checkOverflow);
+    });
+</script>
+</body>
+</html>
